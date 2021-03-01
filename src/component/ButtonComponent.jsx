@@ -31,34 +31,55 @@ export default function ButtonComponent() {
     const [seconds, setSeconds] = useState(0);
 
     useEffect(() => {
-      
-        // Render useEffect 
-        const interval = setInterval(() => {
-             let recentTime = moment().format("h:mm:ss a");
-             //   console.log("Recent : " + recentTime);
-             var startTime = moment(recentTime.toString(), "HH:mm:ss a");
-             var endTime = moment(data.event_Time.toString(), "HH:mm:ss a");
+      // Render useEffect
+      const interval = setInterval(() => {
+        // Origin Date Data - ZULU format -> Converted into UTC
+        let receivedDate = data.validDate.toString().split(".")[0];
+        let recentDate = moment().format().toString().split("+")[0];
 
-             // console.log("End : " + endTime);
-             // calculate total duration
-             var duration = moment.duration(endTime.diff(startTime));
-             // duration in minutes
-             // var minutes = parseInt(duration.asMinutes()) % 60;
-            setBackCounter(duration);
-            
-            setSeconds((seconds) => seconds + 1);
-         }, 100);
-         return () => clearInterval(interval);
+        // Duration Counter
+        let duration = moment(receivedDate, "YYYY-MM-DDTHH:mm:ss").diff(
+          moment(recentDate, "YYYY-MM-DDTHH:mm:ss")
+        );
+        var momentDuration = moment.duration(duration);
+        /*
+         * Total time difference is converted into HH:MM:DD clock this way 
+         * we don't need to take care about DAY GAP
+         */
+        var hourFormat =
+          Math.floor(momentDuration.asHours()) +
+          moment.utc(duration).format(":mm:ss");
+
+        console.log("Hour Clock", hourFormat);
+
+        /*
+         * HOUR Clock is converted into SECOND clock this way 
+         * we don't need to take care about DAY GAP
+         */
+        let secondConversation = moment.duration(hourFormat).asSeconds();
+
+        console.log("Second Clock", secondConversation);
+
+        // Enable Button
+        if (parseInt(secondConversation) <= 0) {
+          setButtonState(false);
+          localStorage.setItem("DisableMe", false);
+        }
+
+        // Hook that controls TIME FLOW on timer
+        setBackCounter(secondConversation);
+      }, 1000);
+       return () => clearInterval(interval);
     }, [])
     // 1 Min Count
     if (
-      backCounter <= 60000 &&
-      backCounter >= 0 &&
+      backCounter * 1000 <= 60000 && // Change this 60K to desired time
+      backCounter * 1000 >= 0 &&
       localStorage.getItem("DisableMe") !== null
     ) {
       return (
         <div className={classes.root}>
-          <Timer initialTime={backCounter} direction="backward">
+          <Timer initialTime={backCounter * 1000} direction="backward">
             {() => (
               <React.Fragment>
                 <Timer.Hours /> :
